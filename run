@@ -1,0 +1,28 @@
+#!/bin/bash
+#./build/main --epsilon 0.8
+#<<<<<<< HEAD
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon 0.368 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+
+# this one working well as a start point
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min 0.10 --epsilon-max 0.70 --epsilon-num 100 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+
+# this one limits adjusted to suit energy shift of m=0.2%
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min 0.32 --epsilon-max 0.42 --epsilon-num 100 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+
+# this one limits adjusted to suit energy offset of c=3keV
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min 0.1 --epsilon-max 0.7 --epsilon-num 100 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+
+# this one limits adjusted to suit efficiency offset of k=5%
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min 0.32 --epsilon-max 0.42 --epsilon-num 100 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+
+# added light nonlinearity correction
+# this is the light nonlinearity correction systematic
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min 0.1 --epsilon-max 0.7 --epsilon-num 100 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min -0.1 --epsilon-max 0.5 --epsilon-num 100 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min 0.8 --epsilon-max 1.4 --epsilon-num 100 --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+./build/main --systematic-energy-mult 1.0 --output-file "of_data_single_eps_fit.txt" #2> "log_testing_single_run_.txt"
+
+#=======
+#./build/main --batch-mode false --fit-subrange false --energy-cut false --epsilon-min 0.10 --epsilon-max 0.70 --epsilon-num 100 --output-file "of_data_testing_single_run.txt" #> "log_testing_single_run_EPS_"$EPSILON".txt"
+#>>>>>>> 39030f95ed5a3920b8a999e9180245e89cd9b007
+#./build/main --batch-mode false --output-file "of_data_testing_single_run.txt" --filename "NewElectronNtuplizerExe_Int_ManDB_output.output.root" #> "log_testing_single_run_EPS_"$EPSILON".txt"
