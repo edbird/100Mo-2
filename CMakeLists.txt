@@ -28,6 +28,7 @@ ADD_EXECUTABLE(main
     #src/SubAnalysis_SensitivityLL2.cpp
     src/main.cpp
 )
+ADD_EXECUTABLE(filestripper src/filestripper.cpp)
 #ADD_EXECUTABLE(createtree
 #    src/ReWeight.cpp
 #    src/createtree.cpp
@@ -55,6 +56,7 @@ INCLUDE_DIRECTORIES("~/Program-Arguments")
 INCLUDE_DIRECTORIES(${ROOT_INCLUDE_DIRS})
 
 TARGET_LINK_LIBRARIES(main ${ROOT_LIBRARIES})
+TARGET_LINK_LIBRARIES(filestripper ${ROOT_LIBRARIES})
 #TARGET_LINK_LIBRARIES(createtree ${ROOT_LIBRARIES})
 #TARGET_LINK_LIBRARIES(sensitivity ${ROOT_LIBRARIES})
 #TARGET_LINK_LIBRARIES(canvas_test ${ROOT_LIBRARIES})

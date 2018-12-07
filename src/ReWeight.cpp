@@ -114,18 +114,21 @@ Double_t ReWeight2(const Double_t T1, const Double_t T2, const Double_t epsilon,
     // find bin corresponding to energies T1, T2
     Int_t bin_x{h_nEqNull->GetXaxis()->FindBin(T1)};
     Int_t bin_y{h_nEqNull->GetYaxis()->FindBin(T2)};
+
+    Double_t h_nEqNull_c{h_nEqNull->GetBinContent(bin_x, bin_y)};
+    Double_t h_nEqTwo_c{h_nEqTwo->GetBinContent(bin_x, bin_y)};
     
     // get the weight for this T1, T2
     // the input data is for epsilon = 0.0
     //Double_t phase_1{1.0 / psiN0};
     //Double_t weight_1{phase_1 * h_nEqNull->GetBinContent(bin_x, bin_y)};
     Double_t phase_1{1.0 / (psiN0 + epsilon_baseline * psiN2)};
-    Double_t weight_1{phase_1 * (h_nEqNull->GetBinContent(bin_x, bin_y) + epsilon_baseline * h_nEqTwo->GetBinContent(bin_x, bin_y))};
+    Double_t weight_1{phase_1 * (h_nEqNull_c + epsilon_baseline * h_nEqTwo_c)};
 
     // get the weight for this T1, T2
     // the input data is for epsilon = some arbitary value
     Double_t phase_2{1.0 / (psiN0 + epsilon * psiN2)};
-    Double_t weight_2{phase_2 * (h_nEqNull->GetBinContent(bin_x, bin_y) + epsilon * h_nEqTwo->GetBinContent(bin_x, bin_y))};
+    Double_t weight_2{phase_2 * (h_nEqNull_c + epsilon * h_nEqTwo_c)};
 
     if(debug == "true")
     {

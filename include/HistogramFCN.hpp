@@ -36,6 +36,7 @@ class HistogramFCN : public ROOT::Minuit2::FCNBase
     HistogramFCN(const TH1* const h1, const TH1* const h2)
         : h1(h1)
         , h2(h2)
+        , error_def{1.0}
         //, amplitude(1.0)
     {
         assert(h1 != nullptr);
@@ -70,10 +71,26 @@ class HistogramFCN : public ROOT::Minuit2::FCNBase
 
             double error{h2->GetBinError(ix)};
 
+            if(error == 0.0)
+            {
+                if(c2 == 0.0)
+                {
+                    continue;
+                }
+                else
+                {
+                    std::cerr << "Warning: Skipping bin with index " << ix << " in chi_square_data, bin error is 0.0 but content != 0.0" << std::endl;
+                }
+            }
+
             double chi{(c1 * amplitude - c2) / error};
+
+            //std::cout << "ix=" << ix << " c1=" << c1 << " c2=" << c2 << " error=" << error 
+            
             chi2 += (chi * chi);
         }
 
+        std::cout << "chi2=" << chi2 << std::endl;
         return chi2;
     }
 
