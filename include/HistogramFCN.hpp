@@ -90,7 +90,7 @@ class HistogramFCN : public ROOT::Minuit2::FCNBase
             chi2 += (chi * chi);
         }
 
-        std::cout << "chi2=" << chi2 << std::endl;
+        //std::cout << "chi2=" << chi2 << std::endl;
         return chi2;
     }
 

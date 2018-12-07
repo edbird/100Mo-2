@@ -465,7 +465,6 @@ int main(int argc, char* argv[])
         }
         */
         // if MC apply energy degradation (correction)
-        /*
         if(m_mode == MODE_FLAG::MODE_MC)
         {
 
@@ -514,12 +513,10 @@ int main(int argc, char* argv[])
             */
 
             //std::cout << "visible_true_ratio = " << visible_true_ratio_1 << ", " << visible_true_ratio_2 << std::endl;
-    /*
             // apply energy correction with systematics if enabled
             el_energy_0 = el_energy_0 * visible_true_ratio_1;
             el_energy_1 = el_energy_0 * visible_true_ratio_2;
         }
-        */
         
         /*** SYSTEMATICS **********************************************************/
 
@@ -636,7 +633,6 @@ int main(int argc, char* argv[])
         Double_t T2{trueT2 / bb_Q};
 
         // if MC apply energy degradation (correction)
-        /*
         if(m_mode == MODE_FLAG::MODE_MC)
         {
 
@@ -685,12 +681,10 @@ int main(int argc, char* argv[])
             */
 
             //std::cout << "visible_true_ratio = " << visible_true_ratio_1 << ", " << visible_true_ratio_2 << std::endl;
-    /*
             // apply energy correction with systematics if enabled
             el_energy_0 = el_energy_0 * visible_true_ratio_1;
             el_energy_1 = el_energy_0 * visible_true_ratio_2;
         }
-        */
 
         
         /*** SYSTEMATICS **********************************************************/
@@ -877,6 +871,7 @@ int main(int argc, char* argv[])
     ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN_amplitude, init_par, init_err);
     std::cout << "minimum: " << FCN_min << std::endl;
 
+    // TODO: must be a better method of getting chisquare
     std::cout << FCN_min.Parameters().Vec() << std::endl;
     std::vector<double> end_par;
     const double* vec_data{FCN_min.Parameters().Vec().Data()};
@@ -885,8 +880,10 @@ int main(int argc, char* argv[])
         end_par.push_back(vec_data[c]);
     }
     std::cout << "chi2=" << theFCN_amplitude.operator()(end_par) << std::endl;
+    double amplitude{end_par.at(0)};
 
 
+    #if 0
     TH1D *h_el_energy_sum_reweight_scale = new TH1D("h_el_energy_sum_reweight_scale", "h_el_energy_sum_reweight_scale", num_bins, 0.0, 4.0);
     for(int ix{1}; ix <= h_el_energy_sum_reweight_scale->GetNbinsX(); ++ ix)
     {
@@ -908,6 +905,7 @@ int main(int argc, char* argv[])
     h_el_energy_sum_original->Draw("esame");
     h_el_energy_sum_reweight_scale->Draw("esame");
     c2->SaveAs("c2.png");
+    #endif
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -932,7 +930,17 @@ int main(int argc, char* argv[])
     */
 
 
+    // scale the red histogram using the amplitude parameter
+    h_el_energy_sum_reweight->Scale(amplitude);
+    h_el_energy_reweight->Scale(amplitude);
+    //h_el_energy_2d_reweight->Scale(amplitude);
 
+
+    //  -> SensitivityMeasurementChisquare1
+    //  -> ChiSquare_BaselineNoSystematic
+    //  -> PrintOutputToFile
+    //  -> MakeSensitivityCanvas
+    //  -> MakeChiSquareType1
     
     
 
