@@ -8,8 +8,12 @@ SET(CMAKE_CXX_STANDARD 11)
 PROJECT(main)
 
 ADD_EXECUTABLE(main
-    #src/aux.cpp
+    src/aux.cpp
     src/ReWeight.cpp
+    src/MinimizeFCNEpsilon31.cpp
+    src/MinimizeFCNSummedEnergy.cpp
+    src/StaticsGroup.cpp
+    src/read_data.cpp
     #src/Analysis.cpp
     #src/Analysis_ReadData.cpp
     #src/Analysis_CanvasFunctions.cpp
