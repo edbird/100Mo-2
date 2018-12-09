@@ -148,9 +148,12 @@ int main(int argc, char* argv[])
 
     // minimize
     ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN, init_par, init_err);
+    std::cout << "Minimization finished" << std::endl;
     std::cout << "minimum: " << FCN_min << std::endl;
 
     // TODO: must be a better method of getting chisquare
+    /*
+       std::cout << "compute chisquare, should agree with value from text output" << std::endl;
     std::cout << FCN_min.Parameters().Vec() << std::endl;
     std::vector<double> end_par;
     const double* vec_data{FCN_min.Parameters().Vec().Data()};
@@ -160,6 +163,8 @@ int main(int argc, char* argv[])
     }
     std::cout << "chi2=" << theFCN.operator()(end_par) << std::endl;
     double epsilon_31_best_fit{end_par.at(0)};
+    */
+    std::cout << "end of main" << std::endl;
 
 
     #if 0

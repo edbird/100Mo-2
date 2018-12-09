@@ -201,10 +201,17 @@ class StaticsGroup
     virtual
     ~StaticsGroup()
     {
+        std::cout << "~StaticsGroup" << std::endl;
+        std::cout << "delete" << std::endl;
         delete h_el_energy_original;
         h_el_energy_original = nullptr;
+        std::cout << "delete sum" << std::endl;
         delete h_el_energy_sum_original;
         h_el_energy_sum_original = nullptr;
+        f->Close();
+        delete f;
+        f = nullptr;
+        std::cout << "done StaticsGroup" << std::endl;
     }
 
 

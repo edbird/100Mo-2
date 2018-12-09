@@ -26,6 +26,9 @@
 
 // C++ headers
 #include <cassert>
+#include <string>
+#include <sstream>
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +54,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
         virtual
         ~MinimizeFCNEpsilon31()
         {
+            std::cout << "~MinimizeFCNEpsilon31" << std::endl;
         }
 
 
@@ -89,40 +93,9 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             // fill histograms
             EventLoop(epsilon_31, h_el_energy_reweight, h_el_energy_sum_reweight, h_el_energy_sum_original);
 
-            // print histograms each loop
-            // this minimization is going wrong - I think - printing warning messages
-            // this bug fixed
-            std::string canvas_name{"c_iteration_"};
-            canvas_name += std::to_string(static_iteration_counter);
-            canvas_name += std::string(".png"); // TODO: other outputs
-            TCanvas *canvas_iteration_output = new TCanvas(canvas_name.c_str(), canvas_name.c_str(), 640, 480);
-            std::cout << canvas_name << std::endl;
-            h_el_energy_original->SetStats(0); // TODO: put elsewhere
-            h_el_energy_original->SetMarkerColor(4); // TODO: put elsewhere
-            h_el_energy_original->SetLineColor(4); // TODO: put elsewhere
-            h_el_energy_reweight->SetStats(0);
-            h_el_energy_reweight->SetMarkerColor(2);
-            h_el_energy_reweight->SetLineColor(2);
-            TLegend *l = new TLegend(0.7, 0.7, 0.9, 0.9, "Single Electron Energy");
-            l->AddEntry(h_el_energy_original, "Baseline", "L");
-            l->AddEntry(h_el_energy_reweight, "ReWeight", "L");
-            std::string latex_string("#xi=");
-            latex_string += std::to_string(epsilon_31);
-            latex_string += std::string("#chi^2=");
-            TLatex *latex = new TLatex(2.0, 220.0, latex_string.c_str());
-            h_el_energy_original->Draw("E");
-            h_el_energy_reweight->Draw("Esame");
-            l->Draw();
-            latex->Draw();
-            const std::string canvas_dir("./iteration_canvas_output/");
-            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".png")).c_str());
-            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".pdf")).c_str());
-            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".eps")).c_str());
-            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".C")).c_str());
-
             // fit histograms (summed energy)
             double amplitude{1.0};
-            Fit(h_el_energy_reweight, h_el_energy_sum_reweight, h_el_energy_sum_original, amplitude);
+            Fit(h_el_energy_sum_reweight, h_el_energy_sum_original, amplitude);
 
             // scale
             // scale the red histogram using the amplitude parameter
@@ -137,6 +110,52 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             // implemented in 100-Mo (original code)
             chi2 = chi_square_test(h_el_energy_reweight, h_el_energy_original);
 
+
+            // print histograms each loop
+            // this minimization is going wrong - I think - printing warning messages
+            // this bug fixed
+            std::string canvas_name{"c_iteration_"};
+            canvas_name += std::to_string(static_iteration_counter);
+            //canvas_name += std::string(".png"); // TODO: other outputs
+            TCanvas *canvas_iteration_output = new TCanvas(canvas_name.c_str(), canvas_name.c_str(), 640, 480);
+            std::cout << canvas_name << std::endl;
+            h_el_energy_original->SetStats(0); // TODO: put elsewhere
+            h_el_energy_original->SetMarkerColor(4); // TODO: put elsewhere
+            h_el_energy_original->SetLineColor(4); // TODO: put elsewhere
+            h_el_energy_reweight->SetStats(0);
+            h_el_energy_reweight->SetMarkerColor(2);
+            h_el_energy_reweight->SetLineColor(2);
+            h_el_energy_original->SetMaximum(2.5e5);
+            TLegend *l = new TLegend(0.55, 0.60, 0.85, 0.85, "Single Electron Energy");
+            l->SetBorderSize(0);
+            l->AddEntry(h_el_energy_original, "Baseline", "L");
+            l->AddEntry(h_el_energy_reweight, "ReWeight", "L");
+            std::string latex_string("#splitline{#xi_{31}=");
+            //latex_string += std::to_string(epsilon_31);
+            std::ostringstream oss;
+            oss << std::fixed;
+            oss << std::setprecision(3);
+            oss << epsilon_31;
+            std::ostringstream oss_chi2;
+            oss_chi2 << std::fixed;
+            oss_chi2 << std::setprecision(3);
+            oss_chi2 << chi2;
+            latex_string += oss.str();
+            latex_string += std::string("}{#chi^{2}=");
+            latex_string += oss_chi2.str();
+            latex_string += std::string("}");
+            TLatex *latex = new TLatex(2.5, 0.8e5, latex_string.c_str());
+            h_el_energy_original->Draw("E");
+            h_el_energy_reweight->Draw("Esame");
+            l->Draw();
+            latex->Draw();
+            const std::string canvas_dir("./iteration_canvas_output/");
+            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".png")).c_str());
+            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".pdf")).c_str());
+            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".eps")).c_str());
+            canvas_iteration_output->SaveAs((canvas_dir + canvas_name + std::string(".C")).c_str());
+            delete canvas_iteration_output;
+            canvas_iteration_output = nullptr;
 
             // read only object, must manage all memory here
             delete h_el_energy_reweight;
@@ -416,7 +435,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
         }
 
 
-        void Fit(/*const double epsilon_31,*/ TH1D *h_el_energy_reweight, TH1D *h_el_energy_sum_reweight, const TH1D *h_el_energy_sum_original, double &amplitude) const
+        void Fit(/*const double epsilon_31,*/ TH1D *h_el_energy_sum_reweight, const TH1D *h_el_energy_sum_original, double &amplitude) const
         {
 
             ////////////////////////////////
@@ -424,6 +443,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             ////////////////////////////////
 
 
+            std::cout << "fit" << std::endl;
 
             ////////////////////////////////////////////////////////////////////////////
             // MINIMIZATION OF SUMMED ENERGY HISTOGRAMS (FIT)
@@ -453,9 +473,10 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
 
             // minimize
             ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN_amplitude, init_par, init_err);
-            std::cout << "minimum: " << FCN_min << std::endl;
+            //std::cout << "minimum: " << FCN_min << std::endl;
 
             // TODO: must be a better method of getting chisquare
+            /*
             std::cout << FCN_min.Parameters().Vec() << std::endl;
             std::vector<double> end_par;
             const double* vec_data{FCN_min.Parameters().Vec().Data()};
@@ -466,7 +487,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             std::cout << "chi2=" << theFCN_amplitude.operator()(end_par) << std::endl;
             //double amplitude{end_par.at(0)};
             amplitude = end_par.at(0);
-
+            */
 
             #if 0
             TH1D *h_el_energy_sum_reweight_scale = new TH1D("h_el_energy_sum_reweight_scale", "h_el_energy_sum_reweight_scale", num_bins, 0.0, 4.0);
@@ -516,6 +537,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
 
 
 
+            std::cout << "fit finished" << std::endl;
 
 
 
