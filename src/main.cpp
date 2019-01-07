@@ -36,6 +36,8 @@
 int main(int argc, char* argv[])
 {
 
+    TH1::SetDefaultSumw2(kTRUE);
+    
     ////////////////////////////////////////////////////////////////////////////
     // PROCESS PROGRAM ARGUMENTS
     ////////////////////////////////////////////////////////////////////////////
@@ -127,43 +129,79 @@ int main(int argc, char* argv[])
 
     const double epsilon_31_baseline{0.368};
     StaticsGroup staticsgroup(epsilon_31_baseline, filename);
+    // note: constructor calls StaticsGroup::EventLoop()
+
+    // set program flags
+    staticsgroup.SetStatisticsRobustnessTestEnable(true);
+    staticsgroup.SetStatisticsRobustnessTestIterations(100);
 
 
-    ////////////////////////////////////////////////////////////////////////////
-    // MINIMIZATION EPSILON_31 
-    ////////////////////////////////////////////////////////////////////////////
-
-    MinimizeFCNEpsilon31 theFCN(staticsgroup);
-    
-    // initial parameters, uncertainties
-    std::vector<double> init_par;
-    //init_par.push_back(epsilon_31_baseline);
-    init_par.push_back(epsilon_31); // temp changed to see if histo output changes as expected
-    // TODO: print histos each itter
-    std::vector<double> init_err;
-    init_err.push_back(0.1);
-
-    // create minimizer
-    ROOT::Minuit2::VariableMetricMinimizer theMinimizer;
-
-    // minimize
-    ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN, init_par, init_err);
-    std::cout << "Minimization finished" << std::endl;
-    std::cout << "minimum: " << FCN_min << std::endl;
-
-    // TODO: must be a better method of getting chisquare
-    /*
-       std::cout << "compute chisquare, should agree with value from text output" << std::endl;
-    std::cout << FCN_min.Parameters().Vec() << std::endl;
-    std::vector<double> end_par;
-    const double* vec_data{FCN_min.Parameters().Vec().Data()};
-    for(int c{0}; c < FCN_min.Parameters().Vec().size(); ++ c)
+    for(int c{0}; c < staticsgroup.GetStatisticsRobustnessTestIterations(); ++ c)
     {
-        end_par.push_back(vec_data[c]);
+
+        MinimizeFCNEpsilon31::ResetStaticIterationCounter();
+
+        staticsgroup.SetStatisticsRobustnessTestCurrentIteration(c);
+
+        ////////////////////////////////////////////////////////////////////////////
+        // MINIMIZATION EPSILON_31 
+        ////////////////////////////////////////////////////////////////////////////
+
+        MinimizeFCNEpsilon31 theFCN(staticsgroup);
+        
+        // initial parameters, uncertainties
+        std::vector<double> init_par;
+        //init_par.push_back(epsilon_31_baseline);
+        init_par.push_back(epsilon_31); // temp changed to see if histo output changes as expected
+        // TODO: print histos each itter
+        std::vector<double> init_err;
+        init_err.push_back(0.1);
+
+        // create minimizer
+        ROOT::Minuit2::VariableMetricMinimizer theMinimizer;
+
+        // minimize
+        ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN, init_par, init_err);
+        std::cout << "Minimization finished" << std::endl;
+        std::cout << "minimum: " << FCN_min << std::endl;
+
+        // TODO: must be a better method of getting chisquare
+        /*
+           std::cout << "compute chisquare, should agree with value from text output" << std::endl;
+        std::cout << FCN_min.Parameters().Vec() << std::endl;
+        std::vector<double> end_par;
+        const double* vec_data{FCN_min.Parameters().Vec().Data()};
+        for(int c{0}; c < FCN_min.Parameters().Vec().size(); ++ c)
+        {
+            end_par.push_back(vec_data[c]);
+        }
+        std::cout << "chi2=" << theFCN.operator()(end_par) << std::endl;
+        double epsilon_31_best_fit{end_par.at(0)};
+        */
+
+        // store chi2 result
+        //std::cout << "init_par: (should be end parameters)" << std::endl;
+        //for(std::size_t i{0}; i < init_par.size(); ++ i)
+        //{
+        //        std::cout << init_par.at(i) << std::endl;
+        //}
+        staticsgroup.StoreChi2Result(theFCN.GetLastChi2());
+        //staticsgroup.StoreEpsilon31Result(theFCN.GetLastEpsilon31());
+        //staticsgroup.StoreEpsilon31ErrResult(FCN_min);
+
+        //std::cout << "par(0)=" << FCN_min.UserParameters().Parameter(0).Value() << std::endl;
+        //std::cout << "cov(0,0)=" << FCN_min.UserCovariance().operator()(0, 0) << std::endl;
+        //std::cout << "error=sqrt(cov(0,0))" << std::sqrt(FCN_min.UserCovariance().operator()(0,0)) << std::endl;
+
+        // store epsilon_31 and associated error
+        staticsgroup.StoreEpsilon31Result(FCN_min.UserParameters().Parameter(0).Value());
+        staticsgroup.StoreEpsilon31ErrResult(std::sqrt(FCN_min.UserCovariance().operator()(0,0)));
+
     }
-    std::cout << "chi2=" << theFCN.operator()(end_par) << std::endl;
-    double epsilon_31_best_fit{end_par.at(0)};
-    */
+
+    staticsgroup.PrintChi2Results();
+    staticsgroup.PrintEpsilon31Results();
+
     std::cout << "end of main" << std::endl;
 
 

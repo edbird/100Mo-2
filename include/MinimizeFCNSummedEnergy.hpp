@@ -99,10 +99,6 @@ class MinimizeFCNSummedEnergy : public ROOT::Minuit2::FCNBase
     }
 
 
-
-
-
-
     private:
 
     const TH1* h1;
