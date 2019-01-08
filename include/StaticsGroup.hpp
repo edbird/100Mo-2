@@ -9,10 +9,12 @@
 // Root headers
 #include "TFile.h"
 #include "TTree.h"
+#include "TGraph.h"
+#include "TGraphErrors.h"
 
 
 
-
+class MinimizeFCNEpsilon31;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -25,6 +27,7 @@
 class StaticsGroup
 {
 
+    friend class MinimizeFCNEpsilon31;
 
     public:
 
@@ -145,6 +148,13 @@ class StaticsGroup
     void
     PrintEpsilon31Results() const;
 
+
+    ////////////////////////////////////////////////////////////////////////////
+    void SetMCFlag(const bool flag) { mc_flag = flag; }
+
+    void
+    SetOpticalCorrectionEnable(const bool enable);
+
     protected:
 
     // epsilon_31 is not a parameter here as it is a parameter managed
@@ -219,6 +229,37 @@ class StaticsGroup
 
 
     ////////////////////////////////////////////////////////////////////////////
+    // AUX DATA (OPTICAL CORRECTION)
+    ////////////////////////////////////////////////////////////////////////////
+
+    // optical correction data
+    bool optical_correction_enable;
+    TFile *f_optical_correction;
+    TGraphErrors *g_optical_correction;
+    TGraph *g_optical_correction_systematic_high;
+    TGraph *g_optical_correction_systematic_low;
+
+    /*** associated systematics flags ***/
+    // enable systematic due to optical correction data associated statistical
+    // uncertainty
+    bool systematic_enable_optical_correction_statistical;
+    // systematics direction, 0=none, 1=positive (add errorbar),
+    // 1=negative (subtract errorbar)
+    int systematic_optical_correction_statistical_direction;
+    // enable systematic due to uncertainty on measurement of Bi207 EC peaks
+    // (both)
+    bool systematic_enable_optical_correction_Bi207_EC_peak;
+
+    // optical correction parameters
+    double optical_correction_parameter_a;
+    double optical_correction_parameter_b;
+    double optical_correction_Bi207_EC_1;//{481.7}
+    double optical_correction_Bi207_EC_2;//{975.7}
+    double optical_correction_measured_Bi207_EC_1;//{481.7}
+    double optical_correction_measured_Bi207_EC_2;//{975.7}
+
+
+    ////////////////////////////////////////////////////////////////////////////
     // PROGRAM BEHAVIOUR FLAGS
     ////////////////////////////////////////////////////////////////////////////
 
@@ -238,6 +279,44 @@ class StaticsGroup
     std::vector<double> statistics_robustness_test_epsilon_31;
     std::vector<double> statistics_robustness_test_epsilon_31_err;
     //TH1D *h_robustness_test_chi2;
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ANALYSIS VARIABLES: FLAGS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // mc flag: true=mc, false=data
+    bool mc_flag;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ANALYSIS VARIABLES: SYSTEMATICS
+    ////////////////////////////////////////////////////////////////////////////
+
+    // energy: multiply
+    bool systematic_enable_energy_multiply;
+    double systematic_energy_multiply;
+
+    // energy: add
+    bool systematic_enable_energy_add;
+    double systematic_energy_add;
+
+    // weight: multiply
+    // NOTE: does not changed obtained fit parameter epsilon_31
+    bool systematic_enable_weight_multiply;
+    double systematic_weight_multiply;
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // ANALYSIS VARIABLES: CUT
+    ////////////////////////////////////////////////////////////////////////////
+
+    // individual
+    bool threshold_low_energy_enable;
+    double threshold_low_energy;
+    // sum
+    bool threshold_low_energy_sum_enable;
+    double threshold_low_energy_sum;
+
 
 };
 

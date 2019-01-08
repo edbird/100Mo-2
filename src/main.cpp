@@ -135,6 +135,23 @@ int main(int argc, char* argv[])
     staticsgroup.SetStatisticsRobustnessTestEnable(true);
     staticsgroup.SetStatisticsRobustnessTestIterations(100);
 
+    // NOTE: statistics robustness test variables could be members of
+    // MinimizeFCNEpsilon31 class instead of StaticsGroup class
+
+    // NOTE: systematics variables are members of StaticsGroup class
+    // and this is now declared as a friend class of MinimizeFCNEpsilon31
+    // to avoid writing get functions for all variables
+    
+    // set MC flag
+    staticsgroup.SetMCFlag(true);
+
+    // enable optical correction
+    staticsgroup.SetOpticalCorrectionEnable(true);
+
+    // enable systematics
+    //
+    // staticsgroup.SetSystematic...()
+
 
     for(int c{0}; c < staticsgroup.GetStatisticsRobustnessTestIterations(); ++ c)
     {
@@ -148,6 +165,7 @@ int main(int argc, char* argv[])
         ////////////////////////////////////////////////////////////////////////////
 
         MinimizeFCNEpsilon31 theFCN(staticsgroup);
+        theFCN.SetPrintIterationEnable(false);
         
         // initial parameters, uncertainties
         std::vector<double> init_par;

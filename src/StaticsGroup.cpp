@@ -12,15 +12,47 @@ StaticsGroup::StaticsGroup(const double epsilon_31_baseline, const std::string& 
     , num_bins{40}
     , bb_Q{3.034}
     , dimension_xy{1001}
+    // event loop data
+    , gen_weight{1.0}
+    // event loop data / histograms
     , h_nEqNull{nullptr}
     , h_nEqTwo{nullptr}
     , h_el_energy_original{nullptr}
     , h_el_energy_sum_original{nullptr}
     , h_gen_weight{nullptr}
-    , gen_weight{1.0}
+    // optical correction
+    , optical_correction_enable{true}
+    , f_optical_correction{nullptr}
+    , g_optical_correction{nullptr}
+    , g_optical_correction_systematic_high{nullptr}
+    , g_optical_correction_systematic_low{nullptr}
+    , systematic_enable_optical_correction_statistical{false}
+    , systematic_optical_correction_statistical_direction{0}
+    , systematic_enable_optical_correction_Bi207_EC_peak{false}
+    , optical_correction_parameter_a{1.0}
+    , optical_correction_parameter_b{0.0}
+    , optical_correction_Bi207_EC_1{481.7}
+    , optical_correction_Bi207_EC_2{975.7}
+    , optical_correction_measured_Bi207_EC_1{481.7}
+    , optical_correction_measured_Bi207_EC_2{975.7}
+    // statistical robustness test
     , statistics_robustness_test_enable{false}
     , statistics_robustness_test_iterations{1}
     , statistics_robustness_test_current_iteration{0}
+    // mc/data flag
+    , mc_flag{false}
+    // other systematics
+    , systematic_enable_energy_multiply{false}
+    , systematic_energy_multiply{1.0}
+    , systematic_enable_energy_add{false}
+    , systematic_energy_add{0.0}
+    , systematic_enable_weight_multiply{false}
+    , systematic_weight_multiply{1.0}
+    // cuts
+    , threshold_low_energy_enable{false}
+    , threshold_low_energy{0.05}
+    , threshold_low_energy_sum_enable{false}
+    , threshold_low_energy_sum{0.15}
     //, h_robustness_test_chi2{nullptr};
 {
 
@@ -180,6 +212,20 @@ StaticsGroup::~StaticsGroup()
     f->Close();
     delete f;
     f = nullptr;
+
+    // clean optical correction data if loaded
+    if(f_optical_correction != nullptr)
+    {
+        f_optical_correction->Close();
+        delete f_optical_correction;
+        //delete g_optical_correction;
+        //g_optical_correction = nullptr;
+        delete g_optical_correction_systematic_high;
+        g_optical_correction_systematic_high = nullptr;
+        delete g_optical_correction_systematic_low;
+        g_optical_correction_systematic_low = nullptr;
+    }
+
     std::cout << "done StaticsGroup" << std::endl;
 }
 
@@ -228,46 +274,28 @@ void StaticsGroup::EventLoop()
         // analysis only valid for 2 electron events
         if(nElectrons != 2) continue;
 
-
         // note: no systematic energy shift in this class
         //Double_t el_energy_0{el_energy_[0] * systematic_energy_mult};
         //Double_t el_energy_1{el_energy_[1] * systematic_energy_mult};
         Double_t el_energy_0{el_energy_[0]};
         Double_t el_energy_1{el_energy_[1]}; // * systematic_energy_mult
 
-        
         // true energy
         // TODO: presumably this does not exist for data so need to search for
         // all instances of the trueT1, trueT2 variable and remove/replace
-        Double_t T1{trueT1 / bb_Q};
-        Double_t T2{trueT2 / bb_Q};
-
-        //std::cout << "T1=" << T1 << "T2= " << T2 << std::endl;
-        //std::cin.get();
+        // note name change
+        Double_t T0{trueT1 / bb_Q};
+        Double_t T1{trueT2 / bb_Q};
 
         // if MC apply energy degradation (correction)
-        /*
-        if(m_mode == MODE_FLAG::MODE_MC)
+        // only apply to MC
+        if(mc_flag)
         {
-            Double_t visible_true_ratio_1{g_energy_correction->Eval(T1)};
-            Double_t visible_true_ratio_2{g_energy_correction->Eval(T2)};
-
-            el_energy_0 = el_energy_0 * visible_true_ratio_1;
-            el_energy_1 = el_energy_0 * visible_true_ratio_2;
-        }
-        */
-        // if MC apply energy degradation (correction)
-#if 0
-        if(m_mode == MODE_FLAG::MODE_MC)
-        {
-
-            Double_t visible_true_ratio_1{1.0};
-            Double_t visible_true_ratio_2{1.0};
-            
-            /*
-            if(b_energy_correction_systematic_enabled == true)
+            if(optical_correction_enable)
             {
-                //std::cout << "energy correction systematic is enabled" << std::endl;
+                // apply energy degradation (optical correction)
+                Double_t visible_true_ratio_0{1.0};
+                Double_t visible_true_ratio_1{1.0};
 
                 // if energy correction systematic is enabled, choose
                 // energy correction value depending on which subanalysis
@@ -275,77 +303,34 @@ void StaticsGroup::EventLoop()
                 // 0 is default
                 // 1 is high systematic
                 // -1 is low systematic
-                if(m_energy_correction_systematic_mode == 0)
-                {
-                    visible_true_ratio_1 = g_energy_correction->Eval(1000.0 * T1);
-                    visible_true_ratio_2 = g_energy_correction->Eval(1000.0 * T2);
-                }
-                else if(m_energy_correction_systematic_mode == 1)
-                {
-                    visible_true_ratio_1 = g_energy_correction_systematic_high->Eval(1000.0 * T1);
-                    visible_true_ratio_2 = g_energy_correction_systematic_high->Eval(1000.0 * T2);
-                }
-                else if(m_energy_correction_systematic_mode == -1)
-                {
-                    visible_true_ratio_1 = g_energy_correction_systematic_low->Eval(1000.0 * T1);
-                    visible_true_ratio_2 = g_energy_correction_systematic_low->Eval(1000.0 * T2);
-                }
+                // do not apply systematics here
+                visible_true_ratio_0 = g_optical_correction->Eval(1000.0 * T0);
+                visible_true_ratio_1 = g_optical_correction->Eval(1000.0 * T1);
+
+                //std::cout << "visible_true_ratio = " << visible_true_ratio_0 << ", " << visible_true_ratio_1 << std::endl;
+
+                // TODO this goes elsewhere
+                // apply energy correction with systematics if enabled
+                el_energy_0 = el_energy_0 * visible_true_ratio_0;
+                el_energy_1 = el_energy_1 * visible_true_ratio_1;
             }
             else
             {
-            */
-                //std::cout << "energy correction systematic is disabled" << std::endl;
-
-                // if systematics for energy correction are disabled...
-                /*
-                visible_true_ratio_1 = g_energy_correction->Eval(1000.0 * T1);
-                visible_true_ratio_2 = g_energy_correction->Eval(1000.0 * T2);
-                */
-            /*
+                // optical correction is diabled
+                // NOOP
             }
-            */
 
-            //std::cout << "visible_true_ratio = " << visible_true_ratio_1 << ", " << visible_true_ratio_2 << std::endl;
-            // apply energy correction with systematics if enabled
-            el_energy_0 = el_energy_0 * visible_true_ratio_1;
-            el_energy_1 = el_energy_0 * visible_true_ratio_2;
-        }
-#endif
+            // TODO: other types of optical correction systematic
         
-        /*** SYSTEMATICS **********************************************************/
-
-        /*
-        // this if statement sorts out the logical problem of having different
-        // high/low sysematic energy multipliers for the purpose of using them
-        // as labels to address the SubAnalysis entries in the map inside Analysis,
-        // and simultaniously allowing the systematic energy mult systematic to be
-        // turned off while another systematic is on
-        if(systematic_energy_mult_enable == true)
-        {
-            el_energy_0 = el_energy_0 * systematic_energy_mult;
-            el_energy_1 = el_energy_1 * systematic_energy_mult;
         }
-            
-        // linear energy offset systematic
-        el_energy_0 = el_energy_0 + systematic_energy_offset;
-        el_energy_1 = el_energy_1 + systematic_energy_offset;
-        */
 
-        // efficiency systematic
-        // TODO: can remove, as weight_efficiency = systematic_efficiency
-        Double_t weight_efficiency = 1.0;
-        //weight_efficiency = weight_efficiency * systematic_efficiency;
-        weight_efficiency = weight_efficiency * 1.0;
+
+
+        
+
 
         // generator weight (MC weight) multiplied by weight efficiency
         Double_t aux_weight{gen_weight};
-        aux_weight = aux_weight * weight_efficiency;
-        
-        // TODO; what happens if the energy shift / systematics move the energy
-        // out of a valid range
-        // answer: nothing, reweight function depends only on T1 T2
-        // TODO: should T1 and T2 be shifted by systematic?
-
 
         // TODO: energy degratation systematic
 
@@ -357,19 +342,6 @@ void StaticsGroup::EventLoop()
             if(el_energy_1 < 0.3) continue;
         }
         */
-
-
-        // NOTE: more logical to set variables
-        // weight_1, weight_2
-        // for baseline and reweighted (now "baseline" and "test" / "universe")
-        // then fill each histogram with each different weight
-        // ?
-        // NOTE: why would we reweight at all, why not use the decay rates from the
-        // theorists directly?
-
-        // ReWeight = baseline 0.0, ReWeight2 = baseline = 0.382
-        //Double_t weight{ReWeight2(T1, T2, epsilon_31, h_nEqNull, h_nEqTwo, psiN0, psiN2, "true")};
-        //Double_t weight{ReWeight(T1, T2, epsilon_31, h_nEqNull, h_nEqTwo, psiN0, psiN2, "true")};
 
         // original
         h_el_energy_original->Fill(el_energy_0, 1.0 * aux_weight);
@@ -390,7 +362,6 @@ void StaticsGroup::EventLoop()
 
 
         h_gen_weight->Fill(trueT1, trueT2, gen_weight);
-
 
     }
 
@@ -672,4 +643,66 @@ void StaticsGroup::PrintEpsilon31Results() const
 
     }
 
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////////////
+
+void StaticsGroup::SetOpticalCorrectionEnable(const bool enable)
+{
+    if(enable)
+    {
+        optical_correction_enable = true;
+
+        // load optical correction data
+        if(f_optical_correction == nullptr)
+        {
+            f_optical_correction = new TFile("Correction_Birks_Cerenkov_avec_systematiques.root");
+            if(f_optical_correction->IsOpen())
+            {
+                g_optical_correction = (TGraphErrors*)f_optical_correction->Get("Graph");
+
+                // get number of points and allocate memory
+                Int_t count{g_optical_correction->GetN()};
+                Double_t *p_x{new Double_t[count]};
+                Double_t *p_y_1{new Double_t[count]};
+                Double_t *p_y_2{new Double_t[count]};
+
+                // construct the systematic shifted graphs
+                for(Int_t ix{0}; ix < count; ++ ix)
+                {
+                    Double_t x, y;
+                    g_optical_correction->GetPoint(ix, x, y);
+                    Double_t ye{g_optical_correction->GetErrorY(ix)};
+                    p_x[ix] = x;
+                    p_y_1[ix] = y + ye;
+                    p_y_2[ix] = y - ye;
+                }
+
+                g_optical_correction_systematic_high = new TGraph(count, p_x, p_y_1);
+                g_optical_correction_systematic_low = new TGraph(count, p_x, p_y_2);
+
+                delete p_x;
+                delete p_y_1;
+                delete p_y_2;
+
+                p_x = nullptr;
+                p_y_1 = nullptr;
+                p_y_2 = nullptr;
+
+            }
+            else
+            {
+                std::cerr << "Error: Could not open Correction_Birks_Cerenkov_avec_systematiques.root" << std::endl;
+                throw "Correction_Birks_Cerenkov_avec_systematiques.root";
+            }
+        }
+
+    }
+    else
+    {
+        optical_correction_enable = false;
+    }
 }

@@ -31,6 +31,8 @@
 
 
 
+
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // MinimizeFCNEpsilon31
@@ -41,11 +43,13 @@
 class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
 {
 
+
     public:
 
         MinimizeFCNEpsilon31(const StaticsGroup& staticsgroup)
             : error_def{1.0}
             , staticsgroup{staticsgroup}
+            , print_iteration_enable{true}
         {
             // if statistics robustness test is enabled, create a histogram
             // with gaussian distributed numbers to use as parameters for
@@ -157,7 +161,10 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             
 
             // save iteration output, also saves params
-            PrintIteration(h_el_energy_original, h_el_energy_reweight_pseudo, epsilon_31, chi2, amplitude);
+            if(print_iteration_enable)
+            {
+                PrintIteration(h_el_energy_original, h_el_energy_reweight_pseudo, epsilon_31, chi2, amplitude);
+            }
 
             // read only object, must manage all memory here
             delete h_el_energy_reweight;
@@ -200,6 +207,10 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
         void
         CreateRandomizedStatistics();
 
+        // print random gaussian parameters in histogram
+        void
+        PrintRandomizedStatistics() const;
+
 
         // create pseudodata histograms from reweighted histograms and
         // random gaussian parameters
@@ -224,6 +235,10 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
                        const double epsilon_31,
                        const double chi2,
                        const double amplitude) const;
+
+        
+        void
+        SetPrintIterationEnable(const bool enable);
 
 
         double
@@ -250,6 +265,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
     protected:
 
         static unsigned long long static_iteration_counter;
+        bool print_iteration_enable;
 
         double error_def;
 

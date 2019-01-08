@@ -68,21 +68,25 @@ void MinimizeFCNEpsilon31::EventLoop(const double epsilon_31, TH1D *h_el_energy_
         // true energy
         // TODO: presumably this does not exist for data so need to search for
         // all instances of the trueT1, trueT2 variable and remove/replace
-        Double_t T1{trueT1 / bb_Q};
-        Double_t T2{trueT2 / bb_Q};
+        // note name change
+        Double_t T0{trueT1 / bb_Q};
+        Double_t T1{trueT2 / bb_Q};
 
         // if MC apply energy degradation (correction)
-#if 0
-        if(m_mode == MODE_FLAG::MODE_MC)
+        // only apply to MC
+        if(staticsgroup.mc_flag)
         {
-
-            Double_t visible_true_ratio_1{1.0};
-            Double_t visible_true_ratio_2{1.0};
-            
-            /*
-            if(b_energy_correction_systematic_enabled == true)
+            if(staticsgroup.optical_correction_enable)
             {
-                //std::cout << "energy correction systematic is enabled" << std::endl;
+                // apply energy degradation (optical correction)
+                Double_t visible_true_ratio_0{1.0};
+                Double_t visible_true_ratio_1{1.0};
+
+                /*
+                TGraphErrors *g_optical_correction{staticsgroup.g_optical_correction};
+                TGraph       *g_optical_correction_systematic_high{staticsgroup.g_optical_correction_systematic_high};
+                TGraph       *g_optical_correction_systematic_low{staticsgroup.g_optical_correction_systematic_low};
+                */
 
                 // if energy correction systematic is enabled, choose
                 // energy correction value depending on which subanalysis
@@ -90,45 +94,86 @@ void MinimizeFCNEpsilon31::EventLoop(const double epsilon_31, TH1D *h_el_energy_
                 // 0 is default
                 // 1 is high systematic
                 // -1 is low systematic
-                if(m_energy_correction_systematic_mode == 0)
+                if(staticsgroup.systematic_enable_optical_correction_statistical)
                 {
-                    visible_true_ratio_1 = g_energy_correction->Eval(1000.0 * T1);
-                    visible_true_ratio_2 = g_energy_correction->Eval(1000.0 * T2);
+                    if(staticsgroup.systematic_optical_correction_statistical_direction == 0)
+                    {
+                        visible_true_ratio_0 = staticsgroup.g_optical_correction->Eval(1000.0 * T0);
+                        visible_true_ratio_1 = staticsgroup.g_optical_correction->Eval(1000.0 * T1);
+                    }
+                    else if(staticsgroup.systematic_optical_correction_statistical_direction == 1)
+                    {
+                        visible_true_ratio_0 = staticsgroup.g_optical_correction_systematic_high->Eval(1000.0 * T0);
+                        visible_true_ratio_1 = staticsgroup.g_optical_correction_systematic_high->Eval(1000.0 * T1);
+                    }
+                    else if(staticsgroup.systematic_optical_correction_statistical_direction == -1)
+                    {
+                        visible_true_ratio_0 = staticsgroup.g_optical_correction_systematic_low->Eval(1000.0 * T0);
+                        visible_true_ratio_1 = staticsgroup.g_optical_correction_systematic_low->Eval(1000.0 * T1);
+                    }
+                    else
+                    {
+                        // NOOP
+                        //std::cout << "invalid value of systematic_optical_correction_statistical" << std::endl;
+                        //throw "invalid value of systematic_optical_correction_statistical";
+                    }
                 }
-                else if(m_energy_correction_systematic_mode == 1)
+                else
                 {
-                    visible_true_ratio_1 = g_energy_correction_systematic_high->Eval(1000.0 * T1);
-                    visible_true_ratio_2 = g_energy_correction_systematic_high->Eval(1000.0 * T2);
+                    //std::cout << "energy correction systematic is disabled" << std::endl;
+                    visible_true_ratio_0 = staticsgroup.g_optical_correction->Eval(1000.0 * T0);
+                    visible_true_ratio_1 = staticsgroup.g_optical_correction->Eval(1000.0 * T1);
                 }
-                else if(m_energy_correction_systematic_mode == -1)
-                {
-                    visible_true_ratio_1 = g_energy_correction_systematic_low->Eval(1000.0 * T1);
-                    visible_true_ratio_2 = g_energy_correction_systematic_low->Eval(1000.0 * T2);
-                }
+
+                //std::cout << "visible_true_ratio = " << visible_true_ratio_0 << ", " << visible_true_ratio_1 << std::endl;
+
+                // TODO this goes elsewhere
+                // apply energy correction with systematics if enabled
+                el_energy_0 = el_energy_0 * visible_true_ratio_0;
+                el_energy_1 = el_energy_1 * visible_true_ratio_1;
             }
             else
             {
-            */
-                //std::cout << "energy correction systematic is disabled" << std::endl;
-
-                // if systematics for energy correction are disabled...
-                /*
-                visible_true_ratio_1 = g_energy_correction->Eval(1000.0 * T1);
-                visible_true_ratio_2 = g_energy_correction->Eval(1000.0 * T2);
-                */
-            /*
+                // optical correction is diabled
+                // NOOP
             }
-            */
 
-            //std::cout << "visible_true_ratio = " << visible_true_ratio_1 << ", " << visible_true_ratio_2 << std::endl;
-            // apply energy correction with systematics if enabled
-            el_energy_0 = el_energy_0 * visible_true_ratio_1;
-            el_energy_1 = el_energy_0 * visible_true_ratio_2;
-        }
-#endif
-
+            // TODO: other types of optical correction systematic
         
+        }
+
+
+
+
         /*** SYSTEMATICS **********************************************************/
+
+
+        if(staticsgroup.systematic_enable_energy_multiply)
+        {
+            el_energy_0 *= staticsgroup.systematic_energy_multiply;
+            el_energy_1 *= staticsgroup.systematic_energy_multiply;
+        }
+
+        if(staticsgroup.systematic_enable_energy_add)
+        {
+            el_energy_0 += staticsgroup.systematic_energy_add;
+            el_energy_1 += staticsgroup.systematic_energy_add;
+        }
+
+        if(staticsgroup.systematic_enable_weight_multiply); // does nothing
+
+
+        // check electron energy threshold
+        if(staticsgroup.threshold_low_energy_enable)
+        {
+            if(el_energy_0 < staticsgroup.threshold_low_energy) continue;
+            if(el_energy_1 < staticsgroup.threshold_low_energy) continue;
+        }
+        if(staticsgroup.threshold_low_energy_sum_enable)
+        {
+            if(el_energy_0 + el_energy_1 < staticsgroup.threshold_low_energy_sum) continue;
+        }
+
 
         /*
         // this if statement sorts out the logical problem of having different
@@ -183,7 +228,7 @@ void MinimizeFCNEpsilon31::EventLoop(const double epsilon_31, TH1D *h_el_energy_
         // theorists directly?
 
         // ReWeight = baseline 0.0, ReWeight2 = baseline = 0.382
-        Double_t weight{ReWeight3(T1, T2, epsilon_31_baseline, epsilon_31, h_nEqNull, h_nEqTwo, psiN0, psiN2, "true")};
+        Double_t weight{ReWeight3(T0, T1, epsilon_31_baseline, epsilon_31, h_nEqNull, h_nEqTwo, psiN0, psiN2, "true")};
         //Double_t weight{ReWeight2(T1, T2, epsilon_31, h_nEqNull, h_nEqTwo, psiN0, psiN2, "true")};
         //Double_t weight{ReWeight(T1, T2, epsilon_31, h_nEqNull, h_nEqTwo, psiN0, psiN2, "true")};
 
@@ -287,7 +332,12 @@ void MinimizeFCNEpsilon31::CreateRandomizedStatistics()
             gen_gaussian_params.push_back(gen.Gaus());
         }
     }
-    
+ 
+}
+
+
+void MinimizeFCNEpsilon31::PrintRandomizedStatistics() const
+{
     // get min max
     auto result{std::minmax_element(gen_gaussian_params.begin(), gen_gaussian_params.end())};
     double x_low{*result.first};
@@ -580,4 +630,10 @@ void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original, TH1* 
     of_param.flush();
     of_param.close();
 
+}
+
+
+void MinimizeFCNEpsilon31::SetPrintIterationEnable(const bool enable)
+{
+    print_iteration_enable = enable;
 }
