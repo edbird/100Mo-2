@@ -52,9 +52,16 @@ class StaticsGroup
     void
     CreatePrintIntermediateData();
 
+    // helper: call this function to call EventLoop(), replaces being
+    // auto called by constructor
+    void
+    EventLoopLoader();
+
+    protected:
     // event loop
     void
     EventLoop();
+    public:
 
     // statistics robustness test - apply statistics randomization
     void
@@ -154,6 +161,42 @@ class StaticsGroup
 
     void
     SetOpticalCorrectionEnable(const bool enable);
+
+    void
+    SetSystematicEnableOpticalCorrectionStatistical(const bool enable)
+    {
+        systematic_enable_optical_correction_statistical = enable;
+    }
+   
+    void
+    SetSystematicOpticalCorrectionStatisticalDirection(const int direction)
+    {
+        // systematics direction, 0=none, 1=positive (add errorbar),
+        // 1=negative (subtract errorbar)
+        systematic_optical_correction_statistical_direction = direction;
+    }
+
+    void
+    SetOpticalCorrectionParams(const double a, const double b)
+    {
+        optical_correction_parameter_a = a;
+        optical_correction_parameter_b = b;
+    }
+    
+    void
+    SetOpticalCorrectionBi207ECPeaks(const double EC_1 = 481.7, const double EC_2 = 975.7)
+    {
+        optical_correction_Bi207_EC_1 = EC_1; //{481.7}
+        optical_correction_Bi207_EC_2 = EC_2; //{975.7}
+    }
+
+    void
+    SetOpticalCorrectionBi207MeasuredPeaks(const double EC_1_measured, const double EC_2_measured)
+    {
+        optical_correction_measured_Bi207_EC_1 = EC_1_measured;//{481.7}
+        optical_correction_measured_Bi207_EC_2 = EC_2_measured; //{975.7}
+    }
+
 
     protected:
 

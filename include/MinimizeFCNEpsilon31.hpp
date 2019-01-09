@@ -191,9 +191,6 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             // increment the call counter
             ++ static_iteration_counter;
 
-            // set last chi2
-            last_chi2 = chi2;
-
             return chi2;
 
         }
@@ -268,21 +265,6 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
         void
         SetPrintIterationEnableSum(const bool enable);
 
-
-        double
-        GetLastChi2() const
-        {
-            return last_chi2;
-        }
-
-        /*
-        double
-        GetLastEpsilon31() const
-        {
-            return last_epsilon_31;
-        }
-        */
-
         static void
         ResetStaticIterationCounter()
         {
@@ -305,9 +287,6 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
         // fluctuated pseudodata
         std::vector<double> gen_gaussian_params;
 
-        // last obtained chi2 result
-        // TODO: remove
-        mutable double last_chi2;
 
 };
 

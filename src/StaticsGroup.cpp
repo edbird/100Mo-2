@@ -21,7 +21,7 @@ StaticsGroup::StaticsGroup(const double epsilon_31_baseline, const std::string& 
     , h_el_energy_sum_original{nullptr}
     , h_gen_weight{nullptr}
     // optical correction
-    , optical_correction_enable{true}
+    , optical_correction_enable{false}
     , f_optical_correction{nullptr}
     , g_optical_correction{nullptr}
     , g_optical_correction_systematic_high{nullptr}
@@ -132,6 +132,14 @@ StaticsGroup::StaticsGroup(const double epsilon_31_baseline, const std::string& 
     #if 0
         analysis.SetModeFlag(MODE_FLAG::MODE_DATA);
     #endif
+
+}
+
+// function to load event loop data after parameters are set
+// TODO: throw error if MinimizeFCNEpsilon31 is run before this function is
+// called
+void StaticsGroup::EventLoopLoader()
+{
 
 
     ////////////////////////////////////////////////////////////////////////

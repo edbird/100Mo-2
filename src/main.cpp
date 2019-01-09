@@ -131,6 +131,9 @@ int main(int argc, char* argv[])
     StaticsGroup staticsgroup(epsilon_31_baseline, filename);
     // note: constructor calls StaticsGroup::EventLoop()
 
+    // set MC flag
+    staticsgroup.SetMCFlag(true);
+
     // set program flags
     staticsgroup.SetStatisticsRobustnessTestEnable(false);
     staticsgroup.SetStatisticsRobustnessTestIterations(1);
@@ -142,19 +145,22 @@ int main(int argc, char* argv[])
     // and this is now declared as a friend class of MinimizeFCNEpsilon31
     // to avoid writing get functions for all variables
     
-    // set MC flag
-    staticsgroup.SetMCFlag(true);
-
     // enable optical correction
-    staticsgroup.SetOpticalCorrectionEnable(false);
+    staticsgroup.SetOpticalCorrectionEnable(true);
     // TODO: note optical correction systematic not being applied correctly
     // should choose a random optical correction dataset from Gaussian with
     // mean=entries, width=error, repeat many times
+
+    // enable optical correction associated systematics
+    staticsgroup.SetSystematicEnableOpticalCorrectionStatistical(true);
+    staticsgroup.SetSystematicOpticalCorrectionStatisticalDirection(-1);
 
     // enable systematics
     //
     // staticsgroup.SetSystematic...()
 
+    // load staticsgroup histograms
+    staticsgroup.EventLoopLoader();
 
     for(int c{0}; c < staticsgroup.GetStatisticsRobustnessTestIterations(); ++ c)
     {
@@ -187,7 +193,6 @@ int main(int argc, char* argv[])
         ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN, init_par, init_err);
         std::cout << "Minimization finished" << std::endl;
         std::cout << "minimum: " << FCN_min << std::endl;
-        std::cout << "chi2: " << theFCN.GetLastChi2() << std::endl;
         std::cout << "chi2: " << FCN_min.Fval() << std::endl;
         std::cout << "edm: " << FCN_min.Edm() << std::endl;
 
@@ -211,8 +216,7 @@ int main(int argc, char* argv[])
         //{
         //        std::cout << init_par.at(i) << std::endl;
         //}
-        staticsgroup.StoreChi2Result(theFCN.GetLastChi2());
-        //staticsgroup.StoreChi2Result(FCN_min.Fval());
+        staticsgroup.StoreChi2Result(FCN_min.Fval());
         //staticsgroup.StoreEpsilon31Result(theFCN.GetLastEpsilon31());
         //staticsgroup.StoreEpsilon31ErrResult(FCN_min);
 

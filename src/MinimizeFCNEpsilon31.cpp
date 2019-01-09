@@ -35,7 +35,7 @@ void MinimizeFCNEpsilon31::EventLoop(const double epsilon_31, TH1D *h_el_energy_
 
     const double &epsilon_31_baseline{staticsgroup.Get_epsilon_31_baseline()};
     const Double_t &bb_Q{staticsgroup.Get_bb_Q()};
-    std::cout << "bb_Q=" << bb_Q << std::endl;
+    //std::cout << "bb_Q=" << bb_Q << std::endl;
 
     const TH2D* const h_nEqNull{staticsgroup.Get_h_nEqNull()};
     const TH2D* const h_nEqTwo{staticsgroup.Get_h_nEqTwo()};
@@ -81,12 +81,6 @@ void MinimizeFCNEpsilon31::EventLoop(const double epsilon_31, TH1D *h_el_energy_
                 // apply energy degradation (optical correction)
                 Double_t visible_true_ratio_0{1.0};
                 Double_t visible_true_ratio_1{1.0};
-
-                /*
-                TGraphErrors *g_optical_correction{staticsgroup.g_optical_correction};
-                TGraph       *g_optical_correction_systematic_high{staticsgroup.g_optical_correction_systematic_high};
-                TGraph       *g_optical_correction_systematic_low{staticsgroup.g_optical_correction_systematic_low};
-                */
 
                 // if energy correction systematic is enabled, choose
                 // energy correction value depending on which subanalysis
@@ -701,6 +695,7 @@ void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original,
 
         // TODO: add parameter uncertainties to TLatex
         // and to output
+        // TODO: csv output, all txt info in one file
 
         // write parameter output
         const std::string canvas_dir("./iteration_param_output/");
