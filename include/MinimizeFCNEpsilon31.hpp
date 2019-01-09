@@ -50,6 +50,8 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             : error_def{1.0}
             , staticsgroup{staticsgroup}
             , print_iteration_enable{true}
+            , print_iteration_enable_single{true}
+            , print_iteration_enable_sum{true}
         {
             // if statistics robustness test is enabled, create a histogram
             // with gaussian distributed numbers to use as parameters for
@@ -113,7 +115,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             h_el_energy_sum_reweight = new TH1D((std::string("h_el_energy_sum_reweight") + h_name_append).c_str(), "", num_bins, 0.0, 4.0);
             
             // get histograms stored in StaticsGroup
-            const TH1D *h_el_energy_sum_original{staticsgroup.Get_h_el_energy_sum_original()};
+            TH1D *h_el_energy_sum_original{staticsgroup.Get_h_el_energy_sum_original()};
             /*const*/ TH1D *h_el_energy_original{staticsgroup.Get_h_el_energy_original()};
             
             // fill histograms
@@ -142,7 +144,9 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
 
             // fit histograms (summed energy)
             double amplitude{1.0};
-            Fit(h_el_energy_sum_reweight_pseudo, h_el_energy_sum_original, amplitude);
+            double chi2_sum{0.0};
+            Fit(h_el_energy_sum_reweight_pseudo, h_el_energy_sum_original, amplitude, chi2_sum);
+            std::cout << "amplitude=" << amplitude << std::endl;
 
             // scale
             // scale the red histogram using the amplitude parameter
@@ -163,7 +167,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
             // save iteration output, also saves params
             if(print_iteration_enable)
             {
-                PrintIteration(h_el_energy_original, h_el_energy_reweight_pseudo, epsilon_31, chi2, amplitude);
+                PrintIteration(h_el_energy_original, h_el_energy_reweight_pseudo, h_el_energy_sum_original, h_el_energy_sum_reweight, epsilon_31, chi2, amplitude, chi2_sum);
             }
 
             // read only object, must manage all memory here
@@ -226,19 +230,43 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
         Fit(/*const double epsilon_31,*/
             TH1D *h_el_energy_sum_reweight,
             const TH1D *h_el_energy_sum_original,
-            double &amplitude) const;
+            double &amplitude,
+            double &chi2_sum) const;
 
 
+        // print 
         void
         PrintIteration(TH1* const h_el_energy_original,
                        TH1* const h_el_energy_reweight,
+                       TH1* const h_el_energy_sum_original,
+                       TH1* const h_el_energy_sum_reweight,
                        const double epsilon_31,
                        const double chi2,
-                       const double amplitude) const;
+                       const double amplitude, 
+                       const double chi2_sum) const;
 
+        // print histogram helper function
+        void
+        PrintHistogram(const std::string&,
+                       const std::string&,
+                       const std::string&,
+                       TH1* const,
+                       TH1* const,
+                       const double,
+                       const double,
+                       const double,
+                       const double,
+                       const double, // TODO: can remove bool and 2 doubles
+                       const bool) const;
         
         void
         SetPrintIterationEnable(const bool enable);
+
+        void
+        SetPrintIterationEnableSingle(const bool enable);
+
+        void
+        SetPrintIterationEnableSum(const bool enable);
 
 
         double
@@ -266,6 +294,8 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
 
         static unsigned long long static_iteration_counter;
         bool print_iteration_enable;
+        bool print_iteration_enable_single; // print single electron
+        bool print_iteration_enable_sum; // print summed electron
 
         double error_def;
 
@@ -276,6 +306,7 @@ class MinimizeFCNEpsilon31 : public ROOT::Minuit2::FCNBase
         std::vector<double> gen_gaussian_params;
 
         // last obtained chi2 result
+        // TODO: remove
         mutable double last_chi2;
 
 };

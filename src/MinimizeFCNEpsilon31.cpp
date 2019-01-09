@@ -421,7 +421,7 @@ void MinimizeFCNEpsilon31::ApplyRandomizedStatistics(TH1D * const h_el_energy_re
 
 
 
-void MinimizeFCNEpsilon31::Fit(/*const double epsilon_31,*/ TH1D *h_el_energy_sum_reweight, const TH1D *h_el_energy_sum_original, double &amplitude) const
+void MinimizeFCNEpsilon31::Fit(/*const double epsilon_31,*/ TH1D *h_el_energy_sum_reweight, const TH1D *h_el_energy_sum_original, double &amplitude, double& chi2_sum) const
 {
 
     ////////////////////////////////
@@ -460,6 +460,11 @@ void MinimizeFCNEpsilon31::Fit(/*const double epsilon_31,*/ TH1D *h_el_energy_su
     // minimize
     ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN_amplitude, init_par, init_err);
     //std::cout << "minimum: " << FCN_min << std::endl;
+
+    // set amplitude variable
+    amplitude = FCN_min.UserParameters().Parameter(0).Value();
+    // amplitude = FCN_min.Value(0); 
+    chi2_sum = FCN_min.Fval();
 
     // TODO: must be a better method of getting chisquare
     /*
@@ -530,15 +535,22 @@ void MinimizeFCNEpsilon31::Fit(/*const double epsilon_31,*/ TH1D *h_el_energy_su
 }
 
 
-void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original, TH1* const h_el_energy_reweight, const double epsilon_31, const double chi2, const double amplitude) const
+void MinimizeFCNEpsilon31::PrintHistogram(const std::string& canvas_dir,
+                                          const std::string& histogram_name,
+                                          const std::string& legend_string,
+                                          TH1* const h_original,
+                                          TH1* const h_reweight,
+                                          const double maximum,
+                                          const double epsilon_31,
+                                          const double chi2,
+                                          const double amplitude,
+                                          const double chi2_sum,
+                                          const bool amplitude_enable) const
 {
-
-    // print histograms each loop
-    // this minimization is going wrong - I think - printing warning messages
-    // this bug fixed
 
     // construct canvas output name
     std::string canvas_name{"c_iteration_"};
+    canvas_name += histogram_name + std::string("_");
     // add iteration number appended (output filename)
     canvas_name += std::to_string(staticsgroup.GetStatisticsRobustnessTestCurrentIteration()) + std::string("_");
     canvas_name += std::to_string(static_iteration_counter);
@@ -549,46 +561,80 @@ void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original, TH1* 
     TCanvas *canvas_iteration_output = new TCanvas(canvas_name.c_str(), canvas_name.c_str(), 640, 480);
     
     // set histogram draw properties
-    h_el_energy_original->SetStats(0); // TODO: put elsewhere
-    h_el_energy_original->SetMarkerColor(4); // TODO: put elsewhere
-    h_el_energy_original->SetLineColor(4); // TODO: put elsewhere
-    h_el_energy_reweight->SetStats(0);
-    h_el_energy_reweight->SetMarkerColor(2);
-    h_el_energy_reweight->SetLineColor(2);
-    h_el_energy_original->SetMaximum(2.5e5);
+    h_original->SetStats(0); // TODO: put elsewhere
+    h_original->SetMarkerColor(4); // TODO: put elsewhere
+    h_original->SetLineColor(4); // TODO: put elsewhere
+    h_reweight->SetStats(0);
+    h_reweight->SetMarkerColor(2);
+    h_reweight->SetLineColor(2);
+    h_original->SetMaximum(maximum);
 
     // legend
-    TLegend *l = new TLegend(0.55, 0.60, 0.85, 0.85, "Single Electron Energy");
+    TLegend *l = new TLegend(0.55, 0.60, 0.85, 0.85, legend_string.c_str());
     l->SetBorderSize(0);
-    l->AddEntry(h_el_energy_original, "Baseline", "L");
-    l->AddEntry(h_el_energy_reweight, "ReWeight", "L");
-    l->Draw();
+    l->AddEntry(h_original, "Baseline", "L");
+    l->AddEntry(h_reweight, "Reweight", "L");
 
     // latex object label - string
-    std::string latex_string("#splitline{#xi_{31}=");
     //latex_string += std::to_string(epsilon_31);
-    std::ostringstream oss;
-    oss << std::fixed;
-    oss << std::setprecision(3);
-    oss << epsilon_31;
-    std::ostringstream oss_chi2;
-    oss_chi2 << std::fixed;
-    oss_chi2 << std::setprecision(3);
-    oss_chi2 << chi2;
-    latex_string += oss.str();
-    latex_string += std::string("}{#chi^{2}=");
-    latex_string += oss_chi2.str();
+    std::string latex_string;
+
+
+    // TODO: this is bad
+    if(!amplitude_enable)
+    {
+        std::ostringstream oss_epsilon;
+        oss_epsilon << std::fixed;
+        oss_epsilon << std::setprecision(3);
+        oss_epsilon << epsilon_31;
+        latex_string += std::string("#splitline{#xi_{31}=");
+        latex_string += oss_epsilon.str();
+
+        std::ostringstream oss_chi2;
+        oss_chi2 << std::fixed;
+        oss_chi2 << std::setprecision(3);
+        oss_chi2 << chi2;
+        latex_string += std::string("}{#chi^{2}=");
+        latex_string += oss_chi2.str();
+        // TODO: wrong chi2 value in sum histogram
+    }
+    if(amplitude_enable)
+    {
+        std::ostringstream oss_amplitude;
+        oss_amplitude << std::fixed;
+        oss_amplitude << std::setprecision(3);
+        oss_amplitude << amplitude;
+        latex_string += std::string("#splitline{A=");
+        latex_string += oss_amplitude.str();
+
+        std::ostringstream oss_chi2_sum;
+        oss_chi2_sum << std::fixed;
+        oss_chi2_sum << std::setprecision(3);
+        oss_chi2_sum << chi2_sum;
+        latex_string += std::string("}{#chi^{2}=");
+        latex_string += oss_chi2_sum.str();
+    }
     latex_string += std::string("}");
 
     // latex object label - latex label
-    TLatex *latex = new TLatex(2.5, 0.8e5, latex_string.c_str());
-    h_el_energy_original->Draw("E");
-    h_el_energy_reweight->Draw("Esame");
+    TLatex *latex{nullptr};
+    if(!amplitude_enable)
+    {
+        latex = new TLatex(2.5, 0.8e5, latex_string.c_str());
+    }
+    if(amplitude_enable)
+    {
+        latex = new TLatex(2.5, 0.4e5, latex_string.c_str());
+    }
+
+    // draw all objects
+    h_original->Draw("E");
+    h_reweight->Draw("histsame"); // TODO: not working? drawing as hist
+    l->Draw();
     latex->Draw();
 
     // save canvas
     // directory
-    const std::string canvas_dir("./iteration_canvas_output/");
     // output formats
     std::vector<std::string> file_ext;
     file_ext.emplace_back(".png");
@@ -610,8 +656,8 @@ void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original, TH1* 
     std::string f_out_fullname(canvas_dir + canvas_name + std::string(".root"));
     TFile *f_out = new TFile(f_out_fullname.c_str(), "recreate");
     canvas_iteration_output->Write();
-    h_el_energy_original->Write();
-    h_el_energy_reweight->Write();
+    h_original->Write();
+    h_reweight->Write();
 
     // clean
     f_out->Close();
@@ -619,16 +665,61 @@ void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original, TH1* 
     f_out = nullptr;
 
     // clean
+    delete l;
+    l = nullptr;
+    delete latex;
+    latex = nullptr;
     delete canvas_iteration_output;
     canvas_iteration_output = nullptr;
+}
 
-    // write parameter output
-    std::string of_param_fullname(canvas_dir + canvas_name + std::string("_params.txt"));
-    std::ofstream of_param(of_param_fullname.c_str());
-    of_param << "chi2," << chi2 << std::endl;
-    of_param << "amplitude" << amplitude << std::endl;
-    of_param.flush();
-    of_param.close();
+
+void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original,
+                                          TH1* const h_el_energy_reweight,
+                                          TH1* const h_el_energy_sum_original,
+                                          TH1* const h_el_energy_sum_reweight,
+                                          const double epsilon_31,
+                                          const double chi2,
+                                          const double amplitude,
+                                          const double chi2_sum) const
+{
+
+    // print histograms each loop
+
+    if(print_iteration_enable)
+    {
+
+        if(print_iteration_enable_single)
+        {
+            PrintHistogram("./iteration_canvas_output_single/", "single", "Single Electron Energy", h_el_energy_original, h_el_energy_reweight, 2.5e5, epsilon_31, chi2, amplitude, chi2_sum, false);
+        }
+
+        if(print_iteration_enable_sum)
+        {
+            PrintHistogram("./iteration_canvas_output_sum/", "sum", "Sum Electron Energy", h_el_energy_sum_original, h_el_energy_sum_reweight, 1.0e5, epsilon_31, chi2, amplitude, chi2_sum, true);
+        }
+
+        // TODO: add parameter uncertainties to TLatex
+        // and to output
+
+        // write parameter output
+        const std::string canvas_dir("./iteration_param_output/");
+        std::string canvas_name{"c_iteration_"};
+        // add iteration number appended (output filename)
+        canvas_name += std::to_string(staticsgroup.GetStatisticsRobustnessTestCurrentIteration()) + std::string("_");
+        canvas_name += std::to_string(static_iteration_counter);
+        std::string of_param_fullname(canvas_dir + canvas_name + std::string("_params.txt"));
+        std::ofstream of_param(of_param_fullname.c_str());
+        of_param << "Single Electron:" << std::endl;
+        of_param << "epsilon_31," << epsilon_31 << std::endl;
+        of_param << "chi2," << chi2 << std::endl;
+        of_param << "Sum Electron:" << std::endl;
+        of_param << "amplitude," << amplitude << std::endl;
+        of_param << "chi2," << chi2_sum << std::endl;
+        of_param.flush();
+        of_param.close();
+    
+    }
 
 }
 
@@ -636,4 +727,14 @@ void MinimizeFCNEpsilon31::PrintIteration(TH1* const h_el_energy_original, TH1* 
 void MinimizeFCNEpsilon31::SetPrintIterationEnable(const bool enable)
 {
     print_iteration_enable = enable;
+}
+
+void MinimizeFCNEpsilon31::SetPrintIterationEnableSingle(const bool enable)
+{
+    print_iteration_enable_single = enable;
+}
+
+void MinimizeFCNEpsilon31::SetPrintIterationEnableSum(const bool enable)
+{
+    print_iteration_enable_sum = enable;
 }

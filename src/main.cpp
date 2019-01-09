@@ -132,8 +132,8 @@ int main(int argc, char* argv[])
     // note: constructor calls StaticsGroup::EventLoop()
 
     // set program flags
-    staticsgroup.SetStatisticsRobustnessTestEnable(true);
-    staticsgroup.SetStatisticsRobustnessTestIterations(100);
+    staticsgroup.SetStatisticsRobustnessTestEnable(false);
+    staticsgroup.SetStatisticsRobustnessTestIterations(1);
 
     // NOTE: statistics robustness test variables could be members of
     // MinimizeFCNEpsilon31 class instead of StaticsGroup class
@@ -146,7 +146,10 @@ int main(int argc, char* argv[])
     staticsgroup.SetMCFlag(true);
 
     // enable optical correction
-    staticsgroup.SetOpticalCorrectionEnable(true);
+    staticsgroup.SetOpticalCorrectionEnable(false);
+    // TODO: note optical correction systematic not being applied correctly
+    // should choose a random optical correction dataset from Gaussian with
+    // mean=entries, width=error, repeat many times
 
     // enable systematics
     //
@@ -165,7 +168,9 @@ int main(int argc, char* argv[])
         ////////////////////////////////////////////////////////////////////////////
 
         MinimizeFCNEpsilon31 theFCN(staticsgroup);
-        theFCN.SetPrintIterationEnable(false);
+        theFCN.SetPrintIterationEnable(true);
+        theFCN.SetPrintIterationEnableSingle(true);
+        theFCN.SetPrintIterationEnableSum(true);
         
         // initial parameters, uncertainties
         std::vector<double> init_par;
@@ -182,6 +187,9 @@ int main(int argc, char* argv[])
         ROOT::Minuit2::FunctionMinimum FCN_min = theMinimizer.Minimize(theFCN, init_par, init_err);
         std::cout << "Minimization finished" << std::endl;
         std::cout << "minimum: " << FCN_min << std::endl;
+        std::cout << "chi2: " << theFCN.GetLastChi2() << std::endl;
+        std::cout << "chi2: " << FCN_min.Fval() << std::endl;
+        std::cout << "edm: " << FCN_min.Edm() << std::endl;
 
         // TODO: must be a better method of getting chisquare
         /*
@@ -204,6 +212,7 @@ int main(int argc, char* argv[])
         //        std::cout << init_par.at(i) << std::endl;
         //}
         staticsgroup.StoreChi2Result(theFCN.GetLastChi2());
+        //staticsgroup.StoreChi2Result(FCN_min.Fval());
         //staticsgroup.StoreEpsilon31Result(theFCN.GetLastEpsilon31());
         //staticsgroup.StoreEpsilon31ErrResult(FCN_min);
 
